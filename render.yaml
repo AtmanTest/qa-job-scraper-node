@@ -1,22 +1,17 @@
 services:
   - type: web_service
-    name: qa-job-scraper
-    repo: https://github.com/AtmanTest/qa-job-scraper
+    name: qa-job-scraper-node
+    repo: https://github.com/AtmanTest/qa-job-scraper-node
     branch: main
     autoDeploy: yes
     env: node
     plan: free
     region: oregon
     healthCheckPath: /health
-    buildCommand: |
-      npm install
-      npx playwright install chromium --with-deps || true
-      node scrapers/warmup.js || true
+    buildCommand: npm install
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      # add below in Render dashboard:
-      # SUPABASE_URL, SUPABASE_KEY, CRON_TOKEN

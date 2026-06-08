@@ -3,17 +3,26 @@ import { randomDelay, normalizeOffer, isDuplicate, autoTag, extractSkills } from
 
 const SEARCH = 'https://www.linkedin.com/jobs/search/?keywords=testeur%20QA%20freelance&location=France';
 
-export async function scrapeLinkedIn(existing = []) {
-  const jobs = [];
-  let browser = null;
+async function tryImportPlaywright() {
   try {
     const mod = await import('playwright-core');
+    return mod;
+  } catch {
+    return null;
+  }
+}
+
+export async function scrapeLinkedIn(existing = []) {
+  const jobs = [];
+  const mod = await tryImportPlaywright();
+  if (!mod) return jobs;
+  let browser;
+  try {
     browser = await mod.chromium.launch({ headless: true });
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
     await page.goto(SEARCH, { waitUntil: 'networkidle', timeout: 25000 });
     await randomDelay(3000, 5000);
-    // scroll to load more
     await page.evaluate(() => window.scrollBy(0, 900)).catch(() => {});
     await randomDelay(1000, 2000);
     const items = await page.$$('.jobs-search__results-list li, .base-card, [data-entity-urn]');
