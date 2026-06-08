@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Jobs — Free-Work, Malt, Comet, LinkedIn...</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0b1220; color: #e5e7eb; }
+.app { max-width: 1200px; margin: 0 auto; padding: 24px; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 22px; }
+.badge { font-size: 11px; background: #111827; border: 1px solid #334155; padding: 4px 10px; border-radius: 999px; color: #9ca3af; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.stat { background: #0f172a; border: 1px solid #1f2937; padding: 14px; border-radius: 12px; }
+.stat b { display: block; font-size: 26px; color: #38bdf8; }
+.stat span { font-size: 12px; color: #9ca3af; }
+.controls { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+input, select { background: #0f172a; color: #e5e7eb; border: 1px solid #334155; padding: 10px; border-radius: 8px; outline: none; }
+input { flex: 1; min-width: 220px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 10px; }
+.card { background: #0f172a; border: 1px solid #1f2937; border-radius: 14px; padding: 18px; transition: .2s; }
+.card:hover { border-color: #38bdf8; transform: translateY(-2px); }
+.card a { text-decoration: none; color: inherit; }
+.card h2 { font-size: 15px; margin: 6px 0; }
+.card .company { color: #38bdf8; font-size: 13px; }
+.card .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.t { background: #020617; border: 1px solid #1f2937; padding: 4px 9px; border-radius: 999px; font-size: 11px; color: #9ca3af; }
+.empty { text-align: center; padding: 60px; color: #4b5563; }
+.err { color: #fca5a5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>QA Jobs</h1>
+    <span class="badge" id="last">—</span>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="s-total">-</b><span>Offres</span></div>
+    <div class="stat"><b id="s-sources">-</b><span>Sources</span></div>
+    <div class="stat"><b id="s-updated">-</b><span>Maj</span></div>
+  </div>
+
+  <div class="controls">
+    <input id="q" placeholder="Recherche titre, entreprise, lieu, compétence...">
+    <select id="src"><option value="">Toutes sources</option></select>
+  </div>
+
+  <div id="grid" class="grid"><div class="empty">Chargement…</div></div>
+</div>
+
+<script>
+const API = '';
+const state = { jobs: [], filtered: [], sources: new Set() };
+async function load() {
+  const r = await fetch('/api/jobs?limit=500');
+  const d = await r.json();
+  state.jobs = d.jobs || [];
+}
+async function stats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  document.getElementById('s-total').textContent = d.total ?? '-';
+  document.getElementById('s-sources').textContent = Object.keys(d.sources || {}).length;
+  document.getElementById('s-updated').textContent = d.updated_at ? new Date(d.updated_at).toLocaleDateString('fr-FR') : '-';
+  document.getElementById('last').textContent = d.updated_at ? new Date(d.updated_at).toLocaleString('fr-FR') : '—';
+}
+function renderFilter() {
+  const sel = document.getElementById('src');
+  const map = {};
+  state.jobs.forEach(j => map[j.source] = (map[j.source]||0)+1);
+  sel.innerHTML = `<option value="">Toutes (${state.jobs.length})</option>`;
+  Object.entries(map).sort((a,b)=>b[1]-a[1]).forEach(([k,n]) => {
+    sel.innerHTML += `<option value="${k}">${k} (${n})</option>`;
+  });
+}
+function apply() {
+  const q = document.getElementById('q').value.toLowerCase().trim();
+  const s = document.getElementById('src').value;
+  state.filtered = state.jobs.filter(j => {
+    if (s && j.source !== s) return false;
+    if (!q) return true;
+    const h = `${j.title} ${j.company||''} ${j.location||''} ${j.description||''}`.toLowerCase();
+    return h.includes(q);
+  });
+  render();
+}
+function esc(s){ return String(s||'').replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function render() {
+  const el = document.getElementById('grid');
+  if (!state.filtered.length) return el.innerHTML = `<div class="empty">Aucune offre</div>`;
+  el.innerHTML = state.filtered.slice(0,200).map(j => `
+    <a class="card" href="${esc(j.url)}" target="_blank" rel="noopener">
+      <div class="company">${esc(j.source)}</div>
+      <h2>${esc(j.title)}</h2>
+      <div class="meta">
+        ${j.location ? `<span class="t">${esc(j.location)}</span>` : ''}
+        ${j.salary ? `<span class="t">${esc(j.salary)}</span>` : ''}
+        ${j.remote ? `<span class="t">Remote</span>` : ''}
+      </div>
+    </a>`).join('');
+}
+document.getElementById('q').addEventListener('input', apply);
+document.getElementById('src').addEventListener('change', apply);
+load().then(() => { stats(); renderFilter(); apply(); });
+</script>
+</body>
+</html>
