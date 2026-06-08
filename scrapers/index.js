@@ -1,12 +1,8 @@
-// scrapers/index.js
 import { loadJobs, saveJobs } from '../storage.js';
 import { scrapeFreeWork } from './freeWork.js';
 import { scrapeFreelanceInfo } from './freelanceInfo.js';
-import { scrapeMalt } from './malt.js';
-import { scrapeComet } from './comet.js';
 import { scrapeCodeur } from './codeur.js';
 import { scrapeIndeed } from './indeed.js';
-import { scrapeLinkedIn } from './linkedin.js';
 import { scrapeHelloWork } from './hellowork.js';
 import { scrapeJooble } from './jooble.js';
 import { scrapeInFreelancing } from './inFreelancing.js';
@@ -14,11 +10,8 @@ import { scrapeInFreelancing } from './inFreelancing.js';
 export const SCRAPERS = [
   { name: 'free-work', run: scrapeFreeWork },
   { name: 'freelance-info', run: scrapeFreelanceInfo },
-  { name: 'malt', run: scrapeMalt },
-  { name: 'comet', run: scrapeComet },
   { name: 'codeur', run: scrapeCodeur },
   { name: 'indeed', run: scrapeIndeed },
-  { name: 'linkedin', run: scrapeLinkedIn },
   { name: 'hellowork', run: scrapeHelloWork },
   { name: 'jooble', run: scrapeJooble },
   { name: 'infreelancing', run: scrapeInFreelancing },
@@ -32,13 +25,7 @@ export async function runAll() {
       const t0 = Date.now();
       const jobs = await s.run(existing);
       const inserted = saveJobs(jobs);
-      results.push({
-        source: s.name,
-        found: jobs.length,
-        inserted,
-        duration_ms: Date.now() - t0,
-        error: null,
-      });
+      results.push({ source: s.name, found: jobs.length, inserted, duration_ms: Date.now() - t0, error: null });
       console.log(`[OK] ${s.name}: found=${jobs.length} inserted=${inserted}`);
     } catch (err) {
       results.push({ source: s.name, found: 0, inserted: 0, error: err.message });
